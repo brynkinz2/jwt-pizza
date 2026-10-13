@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: "22.x"
 
       - name: set version
         id: set_version
@@ -32,10 +32,16 @@ jobs:
           npm ci && npm run build
           cp dist/index.html dist/404.html
 
+      - name: Run tests
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:coverage
+
       - name: Update pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
+
   deploy:
     needs: build
     permissions:
