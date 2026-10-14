@@ -11,6 +11,12 @@ interface Props {
   user: User | null;
 }
 
+async function updateUser() {
+  setTimeout(() => {
+    HSOverlay.close(document.getElementById("hs-jwt-modal")!);
+  }, 100);
+}
+
 export default function DinerDashboard(props: Props) {
   const user = props.user || ({} as User);
   const [orders, setOrders] = React.useState<Order[]>([]);
