@@ -47,6 +47,13 @@ export default function DinerDashboard(props: Props) {
             src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80"
             alt="Employee stock photo"
           />
+          <Button
+            title="Edit"
+            className="w-16 p-0"
+            onPress={() =>
+              HSOverlay.open(document.getElementById("hs-jwt-modal")!)
+            }
+          />
         </div>
 
         <div className="my-4 text-lg text-orange-200 text-start grid grid-cols-5 gap-2">
