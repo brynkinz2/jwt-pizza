@@ -9,17 +9,15 @@ import Button from "../components/button";
 
 interface Props {
   user: User | null;
-}
-
-async function updateUser() {
-  setTimeout(() => {
-    HSOverlay.close(document.getElementById("hs-jwt-modal")!);
-  }, 100);
+  setUser: (user: User) => void;
 }
 
 export default function DinerDashboard(props: Props) {
   const user = props.user || ({} as User);
   const [orders, setOrders] = React.useState<Order[]>([]);
+  const nameRef = React.useRef<HTMLInputElement>(null);
+  const emailRef = React.useRef<HTMLInputElement>(null);
+  const passwordRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     (async () => {
@@ -29,6 +27,23 @@ export default function DinerDashboard(props: Props) {
       }
     })();
   }, [user]);
+
+  async function updateUser() {
+    let updatedUser: User = {
+      id: user.id,
+      name: nameRef.current?.value,
+      email: emailRef.current?.value,
+      password: passwordRef.current?.value || undefined,
+      roles: user.roles,
+    };
+
+    await pizzaService.updateUser(updatedUser);
+
+    props.setUser(updatedUser);
+    setTimeout(() => {
+      HSOverlay.close(document.getElementById("hs-jwt-modal")!);
+    }, 100);
+  }
 
   function formatRole(role: { role: Role; objectId?: string }) {
     if (role.role === Role.Franchisee) {
@@ -165,7 +180,28 @@ export default function DinerDashboard(props: Props) {
             </div>
             <div className="p-4 overflow-y-scroll max-h-52">
               <div className="my-4 text-lg text-start grid grid-cols-5 gap-2 items-center">
-                update fields here
+                <div className="font-semibold">name:</div>
+                <input
+                  type="text"
+                  className="col-span-4 border border-gray-300 rounded-md p-1"
+                  defaultValue={user.name}
+                  ref={nameRef}
+                />
+                <div className="font-semibold">email:</div>
+                <input
+                  type="email"
+                  className="col-span-4 border border-gray-300 rounded-md p-1"
+                  defaultValue={user.email}
+                  ref={emailRef}
+                />
+                <div className="font-semibold">password:</div>
+                <input
+                  id="password"
+                  type="text"
+                  className="col-span-4 border border-gray-300 rounded-md p-1"
+                  defaultValue=""
+                  ref={passwordRef}
+                />
               </div>
             </div>
             <div className="flex justify-end items-center gap-x-2 py-3 px-4 border-t  bg-slate-200 rounded-b-xl">
