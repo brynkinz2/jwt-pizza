@@ -25,6 +25,7 @@ type ApiOptions = {
   user?: typeof admin | typeof diner;
   getFranchises: (page: number, limit: number, name: string) => FranchiseList;
   getUsers?: (page: number, limit: number, name: string) => UserList;
+  onDeleteUser?: (userId: string) => void;
   onCreateFranchise?: (franchise: Franchise) => void;
   onCloseFranchise?: (franchiseId: string) => void;
   onCloseStore?: (franchiseId: string, storeId: string) => void;
@@ -49,6 +50,13 @@ async function stubAdminApi(page: Page, options: ApiOptions) {
           searchParams.get("name") ?? "",
         ) ?? { users: [], more: false },
       });
+      return;
+    }
+
+    const deleteUserMatch = pathname.match(/^\/api\/user\/([^/]+)$/);
+    if (deleteUserMatch && request.method() === "DELETE") {
+      options.onDeleteUser?.(deleteUserMatch[1]);
+      await route.fulfill({ json: { message: "user deleted" } });
       return;
     }
 
@@ -187,6 +195,36 @@ test("an admin can filter users by name", async ({ page }) => {
   await expect(usersTable.getByText("Grace Hopper")).toBeVisible();
   await expect(usersTable.getByText("Ada Lovelace")).toHaveCount(0);
   expect(requestedNames).toContain("*Grace*");
+});
+
+test("an admin can delete a user", async ({ page }) => {
+  const users: ListedUser[] = [
+    {
+      id: "diner-1",
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      roles: [{ role: "diner" }],
+    },
+  ];
+  let deletedUserId: string | undefined;
+  await stubAdminApi(page, {
+    getFranchises: () => ({ franchises: [], more: false }),
+    getUsers: () => ({ users, more: false }),
+    onDeleteUser: (userId) => {
+      deletedUserId = userId;
+      const index = users.findIndex((user) => user.id === userId);
+      if (index >= 0) users.splice(index, 1);
+    },
+  });
+
+  await page.goto("/admin-dashboard");
+  const usersTable = page.getByRole("table", { name: "Users" });
+  const adaRow = usersTable.getByRole("row").filter({ hasText: "Ada Lovelace" });
+  await expect(adaRow).toBeVisible();
+  await adaRow.getByRole("button", { name: "Delete user" }).click();
+
+  await expect(adaRow).toHaveCount(0);
+  expect(deletedUserId).toBe("diner-1");
 });
 
 test("an admin can filter franchises and move between result pages", async ({ page }) => {
