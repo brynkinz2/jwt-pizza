@@ -123,6 +123,35 @@ test("an admin can see users in the admin dashboard", async ({ page }) => {
   await expect(usersTable.getByText("ada@example.com")).toBeVisible();
 });
 
+test("an admin can page through users", async ({ page }) => {
+  const requestedPages: number[] = [];
+  await stubAdminApi(page, {
+    getFranchises: () => ({ franchises: [], more: false }),
+    getUsers: (pageIndex) => {
+      requestedPages.push(pageIndex);
+      if (pageIndex === 0) {
+        return {
+          users: [{ id: "user-1", name: "Ada Lovelace", email: "ada@example.com", roles: [{ role: "diner" }] }],
+          more: true,
+        };
+      }
+      return {
+        users: [{ id: "user-2", name: "Grace Hopper", email: "grace@example.com", roles: [{ role: "diner" }] }],
+        more: false,
+      };
+    },
+  });
+
+  await page.goto("/admin-dashboard");
+  const usersTable = page.getByRole("table", { name: "Users" });
+  await expect(usersTable.getByText("Ada Lovelace")).toBeVisible();
+  await page.getByRole("button", { name: "Next users" }).click();
+  await expect(usersTable.getByText("Grace Hopper")).toBeVisible();
+  await expect(usersTable.getByText("Ada Lovelace")).toHaveCount(0);
+  expect(requestedPages).toContain(0);
+  expect(requestedPages[requestedPages.length - 1]).toBe(1);
+});
+
 test("an admin can filter franchises and move between result pages", async ({ page }) => {
   const provo: Franchise = {
     id: "franchise-1",

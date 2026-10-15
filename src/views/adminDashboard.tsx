@@ -16,6 +16,7 @@ export default function AdminDashboard(props: Props) {
   const [franchiseList, setFranchiseList] = React.useState<FranchiseList>({ franchises: [], more: false });
   const [userList, setUserList] = React.useState<UserList>({ users: [], more: false });
   const [franchisePage, setFranchisePage] = React.useState(0);
+  const [userPage, setUserPage] = React.useState(0);
   const filterFranchiseRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
@@ -26,9 +27,9 @@ export default function AdminDashboard(props: Props) {
 
   React.useEffect(() => {
     (async () => {
-      setUserList(await pizzaService.getUsers(0, 10, '*'));
+      setUserList(await pizzaService.getUsers(userPage, 10, '*'));
     })();
-  }, [props.user]);
+  }, [props.user, userPage]);
 
   function createFranchise() {
     navigate('/admin-dashboard/create-franchise');
@@ -151,6 +152,28 @@ export default function AdminDashboard(props: Props) {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={3} className="text-end text-sm font-medium">
+                    <button
+                      aria-label="Previous users"
+                      className="w-12 p-1 m-1 disabled:bg-neutral-300"
+                      onClick={() => setUserPage(userPage - 1)}
+                      disabled={userPage <= 0}
+                    >
+                      «
+                    </button>
+                    <button
+                      aria-label="Next users"
+                      className="w-12 p-1 m-1 disabled:bg-neutral-300"
+                      onClick={() => setUserPage(userPage + 1)}
+                      disabled={!userList.more}
+                    >
+                      »
+                    </button>
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
