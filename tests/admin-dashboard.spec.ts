@@ -152,6 +152,43 @@ test("an admin can page through users", async ({ page }) => {
   expect(requestedPages[requestedPages.length - 1]).toBe(1);
 });
 
+test("an admin can filter users by name", async ({ page }) => {
+  const requestedNames: string[] = [];
+  const ada: ListedUser = {
+    id: "user-1",
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    roles: [{ role: "diner" }],
+  };
+  const grace: ListedUser = {
+    id: "user-2",
+    name: "Grace Hopper",
+    email: "grace@example.com",
+    roles: [{ role: "diner" }],
+  };
+  await stubAdminApi(page, {
+    getFranchises: () => ({ franchises: [], more: false }),
+    getUsers: (_page, _limit, name) => {
+      requestedNames.push(name);
+      return name.includes("Grace")
+        ? { users: [grace], more: false }
+        : { users: [ada, grace], more: false };
+    },
+  });
+
+  await page.goto("/admin-dashboard");
+  const usersTable = page.getByRole("table", { name: "Users" });
+  await expect(usersTable.getByText("Ada Lovelace")).toBeVisible();
+  await expect(usersTable.getByText("Grace Hopper")).toBeVisible();
+
+  await page.getByPlaceholder("Filter users").fill("Grace");
+  await page.getByRole("button", { name: "Search users" }).click();
+
+  await expect(usersTable.getByText("Grace Hopper")).toBeVisible();
+  await expect(usersTable.getByText("Ada Lovelace")).toHaveCount(0);
+  expect(requestedNames).toContain("*Grace*");
+});
+
 test("an admin can filter franchises and move between result pages", async ({ page }) => {
   const provo: Franchise = {
     id: "franchise-1",

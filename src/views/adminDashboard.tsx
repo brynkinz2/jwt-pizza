@@ -18,6 +18,8 @@ export default function AdminDashboard(props: Props) {
   const [franchisePage, setFranchisePage] = React.useState(0);
   const [userPage, setUserPage] = React.useState(0);
   const filterFranchiseRef = React.useRef<HTMLInputElement>(null);
+  const filterUserRef = React.useRef<HTMLInputElement>(null);
+  const [userNameFilter, setUserNameFilter] = React.useState('*');
 
   React.useEffect(() => {
     (async () => {
@@ -27,9 +29,9 @@ export default function AdminDashboard(props: Props) {
 
   React.useEffect(() => {
     (async () => {
-      setUserList(await pizzaService.getUsers(userPage, 10, '*'));
+      setUserList(await pizzaService.getUsers(userPage, 10, userNameFilter));
     })();
-  }, [props.user, userPage]);
+  }, [props.user, userPage, userNameFilter]);
 
   function createFranchise() {
     navigate('/admin-dashboard/create-franchise');
@@ -45,6 +47,11 @@ export default function AdminDashboard(props: Props) {
 
   async function filterFranchises() {
     setFranchiseList(await pizzaService.getFranchises(franchisePage, 10, `*${filterFranchiseRef.current?.value}*`));
+  }
+
+  function filterUsers() {
+    setUserPage(0);
+    setUserNameFilter(`*${filterUserRef.current?.value ?? ''}*`);
   }
 
   let response = <NotFound />;
@@ -130,6 +137,21 @@ export default function AdminDashboard(props: Props) {
         </div>
         <div className="text-start py-8 px-4 sm:px-6 lg:px-8">
           <h3 className="text-neutral-100 text-xl">Users</h3>
+          <div className="my-2">
+            <input
+              type="text"
+              ref={filterUserRef}
+              placeholder="Filter users"
+              className="px-2 py-1 text-sm border border-gray-300 rounded-lg"
+            />
+            <button
+              type="button"
+              className="ml-2 px-2 py-1 text-sm font-semibold rounded-lg border border-orange-400 text-orange-400"
+              onClick={filterUsers}
+            >
+              Search users
+            </button>
+          </div>
           <div className="bg-neutral-100 overflow-clip my-4">
             <table aria-label="Users" className="min-w-full divide-y divide-gray-200">
               <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
