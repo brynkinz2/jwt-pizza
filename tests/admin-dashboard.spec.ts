@@ -18,10 +18,13 @@ const diner = {
 type Store = { id: string; name: string; totalRevenue?: number };
 type Franchise = { id: string; name: string; admins: { name: string; email: string }[]; stores: Store[] };
 type FranchiseList = { franchises: Franchise[]; more: boolean };
+type ListedUser = { id: string; name: string; email: string; roles: { role: string }[] };
+type UserList = { users: ListedUser[]; more: boolean };
 
 type ApiOptions = {
   user?: typeof admin | typeof diner;
   getFranchises: (page: number, limit: number, name: string) => FranchiseList;
+  getUsers?: (page: number, limit: number, name: string) => UserList;
   onCreateFranchise?: (franchise: Franchise) => void;
   onCloseFranchise?: (franchiseId: string) => void;
   onCloseStore?: (franchiseId: string, storeId: string) => void;
@@ -35,6 +38,17 @@ async function stubAdminApi(page: Page, options: ApiOptions) {
 
     if (pathname === "/api/user/me") {
       await route.fulfill({ json: options.user ?? admin });
+      return;
+    }
+
+    if (pathname === "/api/user" && request.method() === "GET") {
+      await route.fulfill({
+        json: options.getUsers?.(
+          Number(searchParams.get("page")),
+          Number(searchParams.get("limit")),
+          searchParams.get("name") ?? "",
+        ) ?? { users: [], more: false },
+      });
       return;
     }
 
@@ -83,6 +97,30 @@ test("a non-admin cannot use the admin dashboard", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Oops" })).toBeVisible();
   await expect(page.getByText(/dropped a pizza on the floor/i)).toBeVisible();
+});
+
+test("an admin can see users in the admin dashboard", async ({ page }) => {
+  await stubAdminApi(page, {
+    getFranchises: () => ({ franchises: [], more: false }),
+    getUsers: () => ({
+      users: [
+        {
+          id: "diner-1",
+          name: "Ada Lovelace",
+          email: "ada@example.com",
+          roles: [{ role: "diner" }],
+        },
+      ],
+      more: false,
+    }),
+  });
+
+  await page.goto("/admin-dashboard");
+
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
+  const usersTable = page.getByRole("table", { name: "Users" });
+  await expect(usersTable.getByText("Ada Lovelace")).toBeVisible();
+  await expect(usersTable.getByText("ada@example.com")).toBeVisible();
 });
 
 test("an admin can filter franchises and move between result pages", async ({ page }) => {
