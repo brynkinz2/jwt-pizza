@@ -17,6 +17,7 @@ export default function AdminDashboard(props: Props) {
   const [userList, setUserList] = React.useState<UserList>({ users: [], more: false });
   const [franchisePage, setFranchisePage] = React.useState(0);
   const [userPage, setUserPage] = React.useState(0);
+  const [deleteUserError, setDeleteUserError] = React.useState('');
   const filterFranchiseRef = React.useRef<HTMLInputElement>(null);
   const filterUserRef = React.useRef<HTMLInputElement>(null);
   const [userNameFilter, setUserNameFilter] = React.useState('*');
@@ -55,11 +56,16 @@ export default function AdminDashboard(props: Props) {
   }
 
   async function deleteUser(userId: string) {
-    await pizzaService.deleteUser(userId);
-    setUserList((current) => ({
-      ...current,
-      users: current.users.filter((listedUser) => listedUser.id !== userId),
-    }));
+    setDeleteUserError('');
+    try {
+      await pizzaService.deleteUser(userId);
+      setUserList((current) => ({
+        ...current,
+        users: current.users.filter((listedUser) => listedUser.id !== userId),
+      }));
+    } catch (error: any) {
+      setDeleteUserError(error?.message || 'Unable to delete user. Please try again.');
+    }
   }
 
   let response = <NotFound />;
@@ -160,6 +166,7 @@ export default function AdminDashboard(props: Props) {
               Search users
             </button>
           </div>
+          {deleteUserError && <p role="alert" className="my-2 text-red-700">{deleteUserError}</p>}
           <div className="bg-neutral-100 overflow-clip my-4">
             <table aria-label="Users" className="min-w-full divide-y divide-gray-200">
               <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">

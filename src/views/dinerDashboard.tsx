@@ -12,6 +12,15 @@ interface Props {
   setUser: (user: User) => void;
 }
 
+function formatOrderDate(value: string) {
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(value);
+
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+}
+
 export default function DinerDashboard(props: Props) {
   const user = props.user || ({} as User);
   const [orders, setOrders] = React.useState<Order[]>([]);
@@ -40,9 +49,8 @@ export default function DinerDashboard(props: Props) {
     await pizzaService.updateUser(updatedUser);
 
     props.setUser(updatedUser);
-    setTimeout(() => {
-      HSOverlay.close(document.getElementById("hs-jwt-modal")!);
-    }, 100);
+    const modal = document.getElementById("hs-jwt-modal")!;
+    HSOverlay.close(modal);
   }
 
   function formatRole(role: { role: Role; objectId?: string }) {
@@ -145,7 +153,7 @@ export default function DinerDashboard(props: Props) {
                                 ₿
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-start text-xs sm:text-sm text-gray-800">
-                                {order.date.toLocaleString()}
+                                {formatOrderDate(order.date)}
                               </td>
                             </tr>
                           ))}

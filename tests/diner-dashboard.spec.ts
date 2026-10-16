@@ -60,5 +60,5 @@ test("a diner sees order totals, dates, and formatted roles in their history", a
   await expect(page.getByRole("table").getByText("order-43")).toBeVisible();
   await expect(page.getByRole("table").getByText("27 ₿")).toBeVisible();
   await expect(page.getByRole("table").getByText("12 ₿")).toBeVisible();
-  await expect(page.getByRole("table").getByText("2026-10-01")).toBeVisible();
+  await expect(page.getByRole("table").getByText("10/1/2026")).toBeVisible();
 });

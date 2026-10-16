@@ -26,6 +26,7 @@ type ApiOptions = {
   getFranchises: (page: number, limit: number, name: string) => FranchiseList;
   getUsers?: (page: number, limit: number, name: string) => UserList;
   onDeleteUser?: (userId: string) => void;
+  deleteUserStatus?: number;
   onCreateFranchise?: (franchise: Franchise) => void;
   onCloseFranchise?: (franchiseId: string) => void;
   onCloseStore?: (franchiseId: string, storeId: string) => void;
@@ -56,7 +57,12 @@ async function stubAdminApi(page: Page, options: ApiOptions) {
     const deleteUserMatch = pathname.match(/^\/api\/user\/([^/]+)$/);
     if (deleteUserMatch && request.method() === "DELETE") {
       options.onDeleteUser?.(deleteUserMatch[1]);
-      await route.fulfill({ json: { message: "user deleted" } });
+      await route.fulfill({
+        status: options.deleteUserStatus ?? 200,
+        json: options.deleteUserStatus && options.deleteUserStatus >= 400
+          ? { message: "Could not delete user" }
+          : { message: "user deleted" },
+      });
       return;
     }
 
@@ -225,6 +231,28 @@ test("an admin can delete a user", async ({ page }) => {
 
   await expect(adaRow).toHaveCount(0);
   expect(deletedUserId).toBe("diner-1");
+});
+
+test("an admin sees an error and keeps the user when deletion fails", async ({ page }) => {
+  const user: ListedUser = {
+    id: "diner-1",
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    roles: [{ role: "diner" }],
+  };
+  await stubAdminApi(page, {
+    getFranchises: () => ({ franchises: [], more: false }),
+    getUsers: () => ({ users: [user], more: false }),
+    deleteUserStatus: 500,
+  });
+
+  await page.goto("/admin-dashboard");
+  const usersTable = page.getByRole("table", { name: "Users" });
+  const adaRow = usersTable.getByRole("row").filter({ hasText: "Ada Lovelace" });
+  await adaRow.getByRole("button", { name: "Delete user" }).click();
+
+  await expect(adaRow).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("Could not delete user");
 });
 
 test("an admin can filter franchises and move between result pages", async ({ page }) => {
