@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     permissions:
-      id-token: write # Required for requesting the JWT
       contents: read # Required for actions/checkout
 
     name: Build
@@ -56,28 +55,28 @@ jobs:
           [[ "$result" == 200 ]] || { echo "Badge generation failed: HTTP $result" >&2; exit 1; }
 
   deploy:
-  needs: build
-  permissions:
-    id-token: write
-  runs-on: ubuntu-latest
-  env:
-    version: ${{needs.build.outputs.version}}
-  steps:
-    - name: Create OIDC token to AWS
-      uses: aws-actions/configure-aws-credentials@v6.3.0
-      with:
-        audience: sts.amazonaws.com
-        aws-region: us-east-1
-        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT }}:role/${{ secrets.CI_IAM_ROLE }}
+    needs: build
+    permissions:
+      id-token: write # Required for requesting the AWS OIDC token
+    runs-on: ubuntu-latest
+    env:
+      version: ${{ needs.build.outputs.version }}
+    steps:
+      - name: Create OIDC token to AWS
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          audience: sts.amazonaws.com
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT }}:role/${{ secrets.CI_IAM_ROLE }}
 
-    - name: Download dist artifact
-      uses: actions/download-artifact@v8.0.2
-      with:
-        name: package
-        path: dist/
+      - name: Download dist artifact
+        uses: actions/download-artifact@v8.0.2
+        with:
+          name: package
+          path: dist/
 
-    - name: Push to AWS S3
-      run: |
-        echo Deploying $version
-        aws s3 cp dist s3://${{ secrets.APP_BUCKET }} --recursive
-        aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION_ID }} --paths "/*"
+      - name: Push to AWS S3
+        run: |
+          echo Deploying $version
+          aws s3 cp dist s3://${{ secrets.APP_BUCKET }} --recursive
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION_ID }} --paths "/*"
