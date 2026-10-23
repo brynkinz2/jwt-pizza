@@ -55,6 +55,7 @@ jobs:
       pages: write
       id-token: write
       contents: read
+    environment: production
     steps:
       - name: Create OIDC token to AWS
         uses: aws-actions/configure-aws-credentials@v6.3.0
